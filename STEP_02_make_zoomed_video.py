@@ -1,267 +1,217 @@
+"""
+Video Processing Module for Zoom Effects and Clip Management
+This module provides functionality for creating various zoom effects on video clips
+and managing video compositions using MoviePy.
+"""
+
 from moviepy.editor import VideoFileClip, CompositeVideoClip, concatenate_videoclips
-import pandas as pd
-import numpy as np
 
 
-# def zoom_clip(video_path, output_path, x, y, start_time, end_time, duration):
-#     video = VideoFileClip(video_path)
+def create_zoom_in_effect(video_path: str, output_path: str, focus_point_x: int,
+                          focus_point_y: int, start_time: float, end_time: float) -> None:
+    """
+    Creates a zoom-in effect on a video clip, focusing on a specific point.
 
-#     # Extract the portion of the video to zoom in on
-#     clip = video.subclip(start_time, end_time)
-
-#     # Create zoomed clip
-#     zoomed_clip = (clip
-#                    .resize(lambda t: 1 + 0.5*(t/duration))
-#                    .set_position((x, y))
-#                    .set_duration(duration))
-
-#     # Create composite video
-#     composite_video = CompositeVideoClip([zoomed_clip], size=clip.size)
-
-#     # Write video to file
-#     composite_video.write_videofile(output_path,
-#                                     fps=video.fps,
-#                                     codec='libx264',
-#                                     audio_codec='aac')
-
-#     # Close the video
-#     video.close()
-#     clip.close()
-#     zoomed_clip.close()
-#     composite_video.close()
-
-def zoom_clip(video_path, output_path, x, y, start_time, end_time, duration):
+    Args:
+        video_path (str): Path to the input video file
+        output_path (str): Path where the processed video will be saved
+        focus_point_x (int): X-coordinate of the zoom focus point
+        focus_point_y (int): Y-coordinate of the zoom focus point
+        start_time (float): Start time of the zoom effect in seconds
+        end_time (float): End time of the zoom effect in seconds
+    """
+    duration = end_time - start_time
     video = VideoFileClip(video_path)
     clip = video.subclip(start_time, end_time)
 
     # Get original dimensions
-    w, h = clip.size
+    width, height = clip.size
 
-    def zoom_effect(t):
-        # Calculate zoom factor (1 to 1.5 over duration)
-        zoom = 1 + 0.5 * (t/duration)
+    def calculate_zoom_parameters(time):
+        """Calculate zoom parameters for each frame."""
+        zoom_factor = 1 + 0.5 * (time/duration)
+        new_width = width * zoom_factor
+        new_height = height * zoom_factor
 
-        # Calculate new dimensions
-        new_w = w * zoom
-        new_h = h * zoom
-
-        # Calculate position to keep target point (x,y) in same relative position
-        pos_x = -(x * zoom - x)
-        pos_y = -(y * zoom - y)
+        # Maintain focus point position
+        position_x = -(focus_point_x * zoom_factor - focus_point_x)
+        position_y = -(focus_point_y * zoom_factor - focus_point_y)
 
         return {
-            'w': new_w,
-            'h': new_h,
-            'pos': (pos_x, pos_y)
+            'width': new_width,
+            'height': new_height,
+            'position': (position_x, position_y)
         }
 
-    # Create zoomed clip
+    # Apply zoom effect
     zoomed_clip = (clip
-                   .resize(lambda t: (zoom_effect(t)['w'], zoom_effect(t)['h']))
-                   .set_position(lambda t: zoom_effect(t)['pos'])
+                   .resize(lambda t: (calculate_zoom_parameters(t)['width'],
+                                      calculate_zoom_parameters(t)['height']))
+                   .set_position(lambda t: calculate_zoom_parameters(t)['position'])
                    .set_duration(duration))
 
-    # Create composite video
-    final = CompositeVideoClip([zoomed_clip], size=clip.size)
+    # Create and export final composition
+    final_composition = CompositeVideoClip([zoomed_clip], size=clip.size)
+    final_composition.write_videofile(output_path,
+                                      fps=video.fps,
+                                      codec='libx264',
+                                      audio_codec='aac')
 
-    # Write video to file
-    final.write_videofile(output_path,
-                          fps=video.fps,
-                          codec='libx264',
-                          audio_codec='aac')
-
-    # Close all clips
-    video.close()
-    clip.close()
-    zoomed_clip.close()
-    final.close()
+    # Clean up resources
+    for clip_obj in [video, clip, zoomed_clip, final_composition]:
+        clip_obj.close()
 
 
-def revert_zoom(video_path, output_path, x, y, start_time, end_time, duration):
+def create_zoom_out_effect(video_path: str, output_path: str, focus_point_x: int,
+                           focus_point_y: int, start_time: float, end_time: float) -> None:
+    """
+    Creates a zoom-out effect on a video clip, starting from a focused point.
+
+    Args:
+        video_path (str): Path to the input video file
+        output_path (str): Path where the processed video will be saved
+        focus_point_x (int): X-coordinate of the zoom focus point
+        focus_point_y (int): Y-coordinate of the zoom focus point
+        start_time (float): Start time of the zoom effect in seconds
+        end_time (float): End time of the zoom effect in seconds
+    """
+    duration = end_time - start_time
     video = VideoFileClip(video_path)
     clip = video.subclip(start_time, end_time)
 
     # Get original dimensions
-    w, h = clip.size
+    width, height = clip.size
 
-    def zoom_effect(t):
-        # Calculate zoom factor (1.5 to 1 over duration)
-        zoom = 1 + 0.5 * (1 - t/duration)
+    def calculate_zoom_parameters(time):
+        """Calculate zoom parameters for each frame."""
+        zoom_factor = 1 + 0.5 * (1 - time/duration)  # Changed 't' to 'time'
+        new_width = width * zoom_factor
+        new_height = height * zoom_factor
 
-        # Calculate new dimensions
-        new_w = w * zoom
-        new_h = h * zoom
-
-        # Calculate position to keep target point (x,y) in same relative position
-        pos_x = -(x * zoom - x)
-        pos_y = -(y * zoom - y)
+        # Maintain focus point position
+        position_x = -(focus_point_x * zoom_factor - focus_point_x)
+        position_y = -(focus_point_y * zoom_factor - focus_point_y)
 
         return {
-            'w': new_w,
-            'h': new_h,
-            'pos': (pos_x, pos_y)
+            'width': new_width,
+            'height': new_height,
+            'position': (position_x, position_y)
         }
 
-    # Create zoomed clip
-    zoom_reverted_clip = (clip
-                          .resize(lambda t: (zoom_effect(t)['w'], zoom_effect(t)['h']))
-                          .set_position(lambda t: zoom_effect(t)['pos'])
-                          .set_duration(duration))
+    # Apply zoom effect
+    zoomed_clip = (clip
+                   .resize(lambda t: (calculate_zoom_parameters(t)['width'],
+                                      calculate_zoom_parameters(t)['height']))
+                   .set_position(lambda t: calculate_zoom_parameters(t)['position'])
+                   .set_duration(duration))
 
-    # Create composite video
-    final = CompositeVideoClip([zoom_reverted_clip], size=clip.size)
+    # Create and export final composition
+    final_composition = CompositeVideoClip([zoomed_clip], size=clip.size)
+    final_composition.write_videofile(output_path,
+                                      fps=video.fps,
+                                      codec='libx264',
+                                      audio_codec='aac')
 
-    # Write video to file
-    final.write_videofile(output_path,
-                          fps=video.fps,
-                          codec='libx264',
-                          audio_codec='aac')
-
-    # Close all clips
-    video.close()
-    clip.close()
-    zoom_reverted_clip.close()
-    final.close()
+    # Clean up resources
+    for clip_obj in [video, clip, zoomed_clip, final_composition]:
+        clip_obj.close()
 
 
-# def revert_zoom(video_path, output_path, x, y, start_time, end_time, duration):
-#     video = VideoFileClip(video_path)
+def apply_static_zoom(video_path: str, output_path: str, focus_point_x: int,
+                      focus_point_y: int, start_time: float, end_time: float) -> None:
+    """
+    Applies a constant zoom level to a video segment.
 
-#     # Extract the portion of the video to zoom in on
-#     clip = video.subclip(start_time, end_time)
-
-#     zoom_reverted_clip = (clip
-#                           .resize(lambda t: 1 + 0.5*(1 - t/duration))
-#                           .set_position((x, y))
-#                           .set_duration(duration))
-
-#     # Create composite video
-#     composite_video = CompositeVideoClip([zoom_reverted_clip], size=clip.size)
-
-#     # Write video to file
-#     composite_video.write_videofile(output_path,
-#                                     fps=video.fps,
-#                                     codec='libx264',
-#                                     audio_codec='aac')
-
-#     # Close the video
-#     video.close()
-#     clip.close()
-#     zoom_reverted_clip.close()
-#     composite_video.close()
-
-# make subclip but it should be in zoomed in state
-
-
-# def make_constant_zoomed(video_path, x, y, start_time, end_time, output_path):
-#     video = VideoFileClip(video_path)
-#     subclip = video.subclip(start_time, end_time)
-
-#     # Create subclip which is zoomed in all the time
-#     zoomed_clip = (subclip
-#                    .resize(1.5)
-#                    .set_position((x, y))
-#                    .set_duration(end_time - start_time))
-
-#     # Write video to file
-#     zoomed_clip.write_videofile(output_path,
-#                                 fps=video.fps,
-#                                 codec='libx264',
-#                                 audio_codec='aac')
-
-#     # Close the video
-#     video.close()
-#     subclip.close()
-#     zoomed_clip.close()
-
-def make_constant_zoomed(video_path, x, y, start_time, end_time, output_path):
+    Args:
+        video_path (str): Path to the input video file
+        output_path (str): Path where the processed video will be saved
+        focus_point_x (int): X-coordinate of the zoom focus point
+        focus_point_y (int): Y-coordinate of the zoom focus point
+        start_time (float): Start time of the zoom effect in seconds
+        end_time (float): End time of the zoom effect in seconds
+    """
+    # Initialize video and create subclip
     video = VideoFileClip(video_path)
-    subclip = video.subclip(start_time, end_time)
+    clip = video.subclip(start_time, end_time)
 
     # Get original dimensions
-    w, h = subclip.size
+    width, height = clip.size
 
-    # Calculate constant zoom parameters
-    zoom = 1.5
-    new_w = w * zoom
-    new_h = h * zoom
+    # Define constant zoom parameters
+    zoom_factor = 1.5  # 150% zoom
+    new_width = width * zoom_factor
+    new_height = height * zoom_factor
 
-    # Calculate position to keep target point (x,y) in same relative position
-    pos_x = -(x * zoom - x)
-    pos_y = -(y * zoom - y)
+    # Calculate position to maintain focus point
+    position_x = -(focus_point_x * zoom_factor - focus_point_x)
+    position_y = -(focus_point_y * zoom_factor - focus_point_y)
 
-    # Create zoomed clip
-    zoomed_clip = (subclip
-                   .resize((new_w, new_h))
-                   .set_position((pos_x, pos_y))
+    # Create zoomed clip with static parameters
+    zoomed_clip = (clip
+                   .resize((new_width, new_height))
+                   .set_position((position_x, position_y))
                    .set_duration(end_time - start_time))
 
-    # Create composite video with original dimensions
-    final = CompositeVideoClip([zoomed_clip], size=subclip.size)
+    # Create final composition
+    final_composition = CompositeVideoClip([zoomed_clip], size=clip.size)
 
-    # Write video to file
-    final.write_videofile(output_path,
-                          fps=video.fps,
-                          codec='libx264',
-                          audio_codec='aac')
+    # Export the video
+    final_composition.write_videofile(output_path,
+                                      fps=video.fps,
+                                      codec='libx264',
+                                      audio_codec='aac')
 
-    # Close all clips
-    video.close()
-    subclip.close()
-    zoomed_clip.close()
-    final.close()
+    # Clean up resources
+    for clip_obj in [video, clip, zoomed_clip, final_composition]:
+        clip_obj.close()
 
 
-def make_subclip(video_path, start_time, end_time, output_path):
-    video = VideoFileClip(video_path)
-    subclip = video.subclip(start_time, end_time)
+def concatenate_video_segments(output_path: str, clip_paths: list) -> None:
+    """
+    Combines multiple video segments into a single video file.
 
-    # write to disk
-    subclip.write_videofile(output_path, codec='libx264', audio_codec='aac')
-
-    # Close the video
-    video.close()
-    subclip.close()
-
-
-def merge_clips(output_path):
-    clips = [VideoFileClip(clip_path)
-             for clip_path in ['ooo.mp4', 'op.mp4', 'ppp.mp4']]
+    Args:
+        output_path (str): Path where the final merged video will be saved
+        clip_paths (list): List of paths to video segments to be merged
+    """
+    clips = [VideoFileClip(path) for path in clip_paths]
     final_clip = concatenate_videoclips(clips, method='compose')
 
-    # write to disk
     final_clip.write_videofile(output_path, codec='libx264', audio_codec='aac')
 
-    # Close the video
-    for clip in clips:
+    # Clean up resources
+    for clip in clips + [final_clip]:
         clip.close()
-
-    final_clip.close()
 
 
 if __name__ == '__main__':
+    # Configuration
+    FOCUS_POINT = {
+        'x': 1154,
+        'y': 686
+    }
 
-    # Define zoom parameters
-    x = 1154
-    y = 686
-    start_time = 5
-    end_time = 10
-    duration = 5
+    TIME_SEGMENTS = {
+        'zoom_in': (5, 10),
+        'static_zoom': (10, 12),
+        'zoom_out': (12, 17)
+    }
 
-    # Define video path
-    video_path = '/Users/bishwaraj/Documents/screencast-refiner/composite_videos/fdebd853-a815-46ad-bbd2-335471d2d640_composite.mp4'
-    output_path = 'ooo.mp4'
+    INPUT_VIDEO = '/Users/bishwaraj/Documents/screencast-refiner/composite_videos/fdebd853-a815-46ad-bbd2-335471d2d640_composite.mp4'
 
-    # Create zoomed video
-    zoom_clip(video_path, output_path, x, y, start_time, end_time, duration)
+    # Process video segments
+    create_zoom_in_effect(INPUT_VIDEO, 'segment1.mp4',
+                          FOCUS_POINT['x'], FOCUS_POINT['y'],
+                          *TIME_SEGMENTS['zoom_in'])
 
-    output_path = 'ppp.mp4'
-    # Revert zoom
-    revert_zoom(video_path, output_path, x, y, 12, 17, duration)
+    apply_static_zoom(INPUT_VIDEO, 'segment2.mp4',
+                      FOCUS_POINT['x'], FOCUS_POINT['y'],
+                      *TIME_SEGMENTS['static_zoom'])
 
-    output_path = 'op.mp4'
-    make_constant_zoomed(video_path, x, y, 10, 12, output_path)
+    create_zoom_out_effect(INPUT_VIDEO, 'segment3.mp4',
+                           FOCUS_POINT['x'], FOCUS_POINT['y'],
+                           *TIME_SEGMENTS['zoom_out'])
 
-    # Merge clips
-    output_path = 'merged.mp4'
-    merge_clips(output_path)
+    # Merge all segments
+    concatenate_video_segments('final_output.mp4',
+                               ['segment1.mp4', 'segment2.mp4', 'segment3.mp4'])
