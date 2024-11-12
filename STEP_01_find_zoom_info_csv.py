@@ -115,10 +115,11 @@ def find_bounding_rectangles(binary_mask, min_area=100, frame_number=None, total
 
     # Create DataFrame row if we have a large enough rectangle
     if largest_rect and total_area and frame_number is not None:
+        x, y, w, h = largest_rect
         area_percentage = (largest_area / total_area) * 100
 
-        if area_percentage > 1:  # Check if larger than 1% of total area
-            x, y, w, h = largest_rect
+        # Check if larger than 1% of total area and its not too long in width
+        if area_percentage > 1 and w < 0.6 * orig_width:
 
             df_row = {
                 'frame': frame_number,
