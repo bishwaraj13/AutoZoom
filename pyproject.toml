@@ -1,0 +1,32 @@
+[tool.poetry]
+name = "autozoom"
+version = "0.1.0"
+description = ""
+authors = ["Bishwaraj <deybishwaraj013@gmail.com>"]
+readme = "README.md"
+package-mode = false
+
+[virtualenvs]
+in-project = true
+
+[tool.poetry.dependencies]
+python = "^3.12"
+tinydb = "^4.8.2"
+uuid = "^1.30"
+pytz = "^2024.2"
+python-dotenv = "^1.0.1"
+moviepy = "^1.0.3"
+rev-ai = "^2.19.5"
+google-generativeai = "^0.8.3"
+openai = "^1.52.0"
+opencv-python = "^4.10.0.84"
+numpy = "^2.1.2"
+scipy = "^1.14.1"
+matplotlib = "^3.9.2"
+pandas = "^2.2.3"
+ipykernel = "^6.29.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
