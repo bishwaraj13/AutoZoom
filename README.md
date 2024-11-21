@@ -1,15 +1,15 @@
-#### Overview
+## Overview
 
 The `VideoHeatmapAnalyzer` class is designed to analyze video content and generate activity heatmaps to identify regions of significant activity within screen recordings. This tool is particularly useful for applications where understanding spatial distribution and intensity of activity over time is crucial, such as enhancing user experience by automatically zooming into active areas of screen recordings.
 
-#### Features
+## Features
 
 - Computes optical flow between video frames to detect motion.
 - Generates heatmaps based on motion magnitudes.
 - Identifies and analyzes regions with significant activities.
 - Optionally saves visualizations of these heatmaps with activity regions highlighted.
 
-#### Algorithm
+## Algorithm
 
 The analysis process involves several steps:
 
@@ -77,7 +77,7 @@ Before running the script, ensure the following setup steps are completed:
    - To add new libraries, use `poetry add <package>`.
    - To remove libraries, use `poetry remove <package>`.
 
-#### Usage
+## Usage
 
 To use the `VideoHeatmapAnalyzer`, follow these steps:
 
@@ -95,7 +95,7 @@ To use the `VideoHeatmapAnalyzer`, follow these steps:
 
 3. Results will be saved in the specified output directory, and significant activity frames will be printed to the console.
 
-#### Example
+## Example
 
 Here's a simple example to get you started:
 
